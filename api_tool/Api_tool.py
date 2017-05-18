@@ -296,13 +296,18 @@ class GUI:
 
     def remove_successful_requests(self, requests, responses):
         for index, row in enumerate(responses):
-            self.log_info(str(row.status_code))
-            if row.status_code == 200 or row.status_code == 204 or row.status_code == 404:
+            self.log_info(str(row.url))
+            print row.status_code
+            if row.status_code == 200 or row.status_code == 204:
+                print row.content
                 if "error" in row.json():
                     print "Unable to delete entity via api due to %s" % (row.json()["details"])
                 del requests[index]
             if row.status_code == 429:
                 return (self.retry_time_handler(row.json()), requests)
+            if row.status_code == 404:
+                print "encountered 404 for %s, deleting it from the request list" % (row.url)
+                del requests[index]
         return (0,requests)
 
     def del_entities(self, entity):
@@ -446,7 +451,7 @@ class GUI:
 
         print "Sending batch of requests"
 
-        responses = grequests.map(requests[0:4999])
+        responses = grequests.map(requests[0:499])
 
         # print sent_responses
         delay,new_requests = self.remove_successful_requests(requests, responses)
@@ -456,8 +461,8 @@ class GUI:
             time.sleep(delay)
 
         if len(new_requests) > 0:
-            print "Retrying %s requests after sleeping for a min" % (len(new_requests))
-            time.sleep(60)
+            print "Retrying %s requests after sleeping for a 5 seconds" % (len(new_requests))
+            time.sleep(5)
             self.send_requests(new_requests)
 
         print 'Done sending requests'
