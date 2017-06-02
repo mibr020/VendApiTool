@@ -34,6 +34,7 @@ class GUI:
         self.giftcardsDeleteEndpoint = "https://%s.vendhq.com/api/2.0/balances/gift_cards/%s"
         self.salesDeleteEndpoint = "https://%s.vendhq.com/api/register_sales"
 
+        self.offset = 0
         self.csvSize = 0
         self.successfullySentRequests = []
         self.dictOfUnsentRequests = {}
@@ -302,12 +303,15 @@ class GUI:
                 print row.content
                 if "error" in row.json():
                     print "Unable to delete entity via api due to %s" % (row.json()["details"])
-                del requests[index]
+                del requests[index-self.offset]
+                self.offset += 1
             if row.status_code == 429:
                 return (self.retry_time_handler(row.json()), requests)
             if row.status_code == 404:
-                print "encountered 404 for %s, deleting it from the request list" % (row.url)
-                del requests[index]
+                print "encountered 404 for %s, deleting it from the request list" % (row)
+                del requests[index-self.offset]
+                self.offset += 1
+        self.offset = 0
         return (0,requests)
 
     def del_entities(self, entity):
@@ -451,7 +455,14 @@ class GUI:
 
         print "Sending batch of requests"
 
-        responses = grequests.map(requests[0:499])
+        if len(requests) < 499:
+            print "less than 499"
+            print len(requests)
+            responses = grequests.map(requests[0:len(requests)-1])
+        else:
+            print "More than 499"
+            print len(requests)
+            responses = grequests.map(requests[0:499])
 
         # print sent_responses
         delay,new_requests = self.remove_successful_requests(requests, responses)
