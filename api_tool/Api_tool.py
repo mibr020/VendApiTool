@@ -296,18 +296,22 @@ class GUI:
 
     def remove_successful_requests(self, requests, responses):
         for index, row in enumerate(responses):
-            self.log_info(str(row.url))
-            print row.status_code
-            if row.status_code == 200 or row.status_code == 204:
-                print row.content
-                if "error" in row.json():
-                    print "Unable to delete entity via api due to %s" % (row.json()["details"])
-                del requests[index]
-            if row.status_code == 429:
-                return (self.retry_time_handler(row.json()), requests)
-            if row.status_code == 404:
-                print "encountered 404 for %s, deleting it from the request list" % (row.url)
-                del requests[index]
+            if row is None:
+                print "NoneType so skipping over this one gee"
+                continue
+            else:
+                self.log_info(str(row.url))
+                print row.status_code
+                if row.status_code == 200 or row.status_code == 204:
+                    print row.content
+                    if "error" in row.json():
+                        print "Unable to delete entity via api due to %s" % (row.json()["details"])
+                    del requests[index]
+                if row.status_code == 429:
+                    return (self.retry_time_handler(row.json()), requests)
+                if row.status_code == 404:
+                    print "encountered 404 for %s, deleting it from the request list" % (row.url)
+                    del requests[index]
         return (0,requests)
 
     def del_entities(self, entity):
