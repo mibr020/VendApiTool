@@ -303,18 +303,21 @@ class GUI:
             else:
                 self.log_info(str(row.url))
                 print row.status_code
-                if row.status_code == 200 or row.status_code == 204:
+                if row.status_code == 200
                     print row.content
-                    if "error" in row.json():
-                        print "Unable to delete entity via api due to %s" % (row.json()["details"])
                     del requests[index-self.offset]
                     self.offset += 1
-                if row.status_code == 429:
+                else if row.status_code == 429:
                     return (self.retry_time_handler(row.json()), requests)
-                if row.status_code == 404:
+                else if row.status_code == 404:
                     print "encountered 404 for %s, deleting it from the request list" % (row.url)
                     del requests[index-self.offset]
                     self.offset += 1
+                else if row.status_code == 204:
+                    print "status = 204, nothing returned"
+                    del requests[index-self.offset]
+                    self.offset += 1
+
         self.offset = 0
 
         return (0,requests)
@@ -467,14 +470,14 @@ class GUI:
         else:
             print "More than 499"
             print len(requests)
-            responses = grequests.map(requests[0:4999])
+            responses = grequests.map(requests[0:2499])
 
         # print sent_responses
         delay,new_requests = self.remove_successful_requests(requests, responses)
 
         # Sleeping 10 mins regardless if we hit a rate limit or not
         # This is so that we don't put too much strain on the databus 
-        #Since we're sending 5000 chunks
+        # Since we're sending 2500 chunks
 
         if len(new_requests) > 0:
             print "Retrying %s requests after sleeping for a 10 mins" % (len(new_requests))
