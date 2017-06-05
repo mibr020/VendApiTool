@@ -316,7 +316,7 @@ class GUI:
                     del requests[index-self.offset]
                     self.offset += 1
         self.offset = 0
-        
+
         return (0,requests)
 
     def del_entities(self, entity):
@@ -467,18 +467,18 @@ class GUI:
         else:
             print "More than 499"
             print len(requests)
-            responses = grequests.map(requests[0:499])
+            responses = grequests.map(requests[0:4999])
 
         # print sent_responses
         delay,new_requests = self.remove_successful_requests(requests, responses)
 
-        if delay:
-            print "Sleeping for %s seconds" % (str(delay))
-            time.sleep(delay)
+        # Sleeping 10 mins regardless if we hit a rate limit or not
+        # This is so that we don't put too much strain on the databus 
+        #Since we're sending 5000 chunks
 
         if len(new_requests) > 0:
-            print "Retrying %s requests after sleeping for a 5 seconds" % (len(new_requests))
-            time.sleep(5)
+            print "Retrying %s requests after sleeping for a 10 mins" % (len(new_requests))
+            time.sleep(600)
             self.send_requests(new_requests)
 
         print 'Done sending requests'
