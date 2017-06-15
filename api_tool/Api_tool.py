@@ -303,20 +303,25 @@ class GUI:
             else:
                 self.log_info(str(row.url))
                 print row.status_code
-                if row.status_code == 200
+                if row.status_code == 200:
                     print row.content
                     del requests[index-self.offset]
                     self.offset += 1
-                else if row.status_code == 429:
+                elif row.status_code == 429:
                     return (self.retry_time_handler(row.json()), requests)
-                else if row.status_code == 404:
+                elif row.status_code == 404:
                     print "encountered 404 for %s, deleting it from the request list" % (row.url)
                     del requests[index-self.offset]
                     self.offset += 1
-                else if row.status_code == 204:
+                elif row.status_code == 204:
                     print "status = 204, nothing returned"
                     del requests[index-self.offset]
                     self.offset += 1
+                else:
+                    print row.status_code
+            
+            #Close the socket to free up the file handles
+            row.close()
 
         self.offset = 0
 
@@ -352,7 +357,7 @@ class GUI:
                 print self.number_of_rows(entity)
 
                 for index, row in enumerate(reader):
-                    requests.append(grequests.delete(endpoint % (self.domain_prefix.get(), row['id']), headers=headers))
+                    requests.append(grequests.delete(endpoint % (self.domain_prefix.get(), row['id']), headers=headers, stream=False))
 
                 # batch requests into groups of 300
                 # on any batch that has any response of 429, wait N seconds (determined by retry_time_handler)
