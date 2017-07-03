@@ -304,7 +304,7 @@ class GUI:
                 self.log_info(str(row.url))
                 print row.status_code
                 if row.status_code == 200:
-                    print row.content
+                    self.successfullySentRequests.append(row.json())
                     del requests[index-self.offset]
                     self.offset += 1
                 elif row.status_code == 429:
@@ -319,11 +319,18 @@ class GUI:
                     self.offset += 1
                 else:
                     print row.status_code
+                    del requests[index-self.offset]
+                    self.offset += 1
+
             
             #Close the socket to free up the file handles
             row.close()
 
         self.offset = 0
+
+        print "Done removing successful requests"
+
+        print "Request list remaining: %s" % (requests)
 
         return (0,requests)
 
@@ -468,12 +475,12 @@ class GUI:
 
         print "Sending batch of requests"
 
-        if len(requests) < 499:
-            print "less than 499"
+        if len(requests) < 2500:
+            print "less than 2500"
             print len(requests)
-            responses = grequests.map(requests[0:len(requests)-1])
+            responses = grequests.map(requests)
         else:
-            print "More than 499"
+            print "More than 2500"
             print len(requests)
             responses = grequests.map(requests[0:2499])
 
@@ -520,9 +527,9 @@ class GUI:
                         grequests.get(self.getSalesEndpoint % (self.domain_prefix.get(), row['id']), headers=headers))
                     # Check if limit is reached or end of file is reached, if so then it sends the get sales requests in bulk and sleeps for 5 mins
 
-                sent_responses = grequests.map(requests)
+                #sent_responses = grequests.map(requests)
 
-                self.send_requests(sent_responses, requests)
+                self.send_requests(requests)
 
                 # limit_reached = self.call_api(index, sales, csv_size)
 
@@ -570,17 +577,7 @@ class GUI:
 
         self.log_info("### About to void them motherfuckers" + "\n")
 
-        sent_responses = grequests.map(requests)
-
-        self.text.insert(END, "### About to retry failed requests" + "\n")
-        self.text.see(END)
-        self.text.update()
-
-        print sent_responses
-
-        self.successfullySentRequests = []
-
-        self.send_requests(sent_responses, requests)
+        self.send_requests(requests)
 
         print "Done voiding sales from CSV"
 
