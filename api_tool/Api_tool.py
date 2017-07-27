@@ -322,7 +322,7 @@ class GUI:
                     del requests[index-self.offset]
                     self.offset += 1
 
-            
+
             #Close the socket to free up the file handles
             row.close()
 
@@ -355,10 +355,7 @@ class GUI:
         try:
             with open(self.domain_prefix.get() + '-' + entity + '.csv', 'rb') as vcsv:
                 reader = csv.DictReader(vcsv)
-                headers = {
-                    self.HEADERS[0][0]: self.HEADERS[0][1],
-                    self.HEADERS[1][0]: self.HEADERS[1][1] % (self.token.get()),
-                }
+                headers = self.setup_headers()
                 requests = []
 
                 print self.number_of_rows(entity)
@@ -392,18 +389,16 @@ class GUI:
 
     def void_gift_cards(self, entity, endpoint):
         with open(self.domain_prefix.get() + '-' + entity + '.csv', 'rb') as vcsv:
+            csv_row_count = self.number_of_rows(entity)
             reader = csv.DictReader(vcsv)
-            headers = {
-                self.HEADERS[0][0]: self.HEADERS[0][1],
-                self.HEADERS[1][0]: self.HEADERS[1][1] % (self.token.get()),
-            }
+            headers = self.setup_headers()
             response = []
             for index, row in enumerate(reader):
                 self.log_request_responses([row['number']])
                 response.append(grequests.delete(endpoint % (self.domain_prefix.get(), row['number']), headers=headers))
 
                 # Calls api and is rate limit concious
-                limit_reached = self.call_api(index, response)
+                limit_reached = self.call_api(index, response, csv_row_count)
 
                 if limit_reached:
                     response = []
@@ -429,6 +424,7 @@ class GUI:
         headers = {
             self.HEADERS[0][0]: self.HEADERS[0][1],
             self.HEADERS[1][0]: self.HEADERS[1][1] % (self.token.get()),
+            'X-Requested-With': 'XMLHttpRequest'
         }
 
         return headers
@@ -488,7 +484,7 @@ class GUI:
         delay,new_requests = self.remove_successful_requests(requests, responses)
 
         # Sleeping 10 mins regardless if we hit a rate limit or not
-        # This is so that we don't put too much strain on the databus 
+        # This is so that we don't put too much strain on the databus
         # Since we're sending 2500 chunks
 
         if len(new_requests) > 0:
@@ -553,6 +549,7 @@ class GUI:
         return True
 
     def void_sales_from_csv(self, sales):
+        print "preparing sales for voiding"
         # To hold unsent requets
         requests = []
         headers = self.setup_headers()
